@@ -39,7 +39,8 @@ components/{auth,tasks}/               feature components
 lib/db.ts                              Prisma singleton
 lib/auth/{password,session,dal}.ts     hashing, cookie/JWT, session checks
 lib/validation/{auth,task}.ts          Zod schemas
-lib/http.ts                            JSON responses + error mapping
+lib/http.ts                            JSON responses, ApiError, error mapping, origin check
+test/stubs/                            test-only stubs (e.g. `server-only`), vitest.config.mts
 server/tasks/task.service.ts           business logic
 generated/prisma/                      Prisma client (gitignored)
 prisma/schema.prisma, prisma/seed.ts
@@ -65,12 +66,15 @@ Task_2.pdf                             Part 2 deliverable (repo root)
 6. `proxy.ts` only redirects for UX; it is never the security check.
 7. Cookie `session`: httpOnly, secure in production, sameSite lax, path `/`, 7 days. JWT holds only `userId` and `role`.
 8. Login returns the same 401 "Invalid email or password" for unknown email or wrong password. Hash with bcrypt cost 12.
-9. Error shape: `{ error: { code, message, details? } }`. Use 400/401/404/409/422/500.
+9. Error shape: `{ error: { code, message, details? } }`. Use 400/401/403/404/409/422/500
+   (400 bad JSON, 403 cross-origin, 409 unique violation, 422 Zod). Handlers throw `ApiError` and
+   return `handleRouteError(err)` from `catch`; `requireApiSession()` throws a 401 `ApiError`.
 10. Server Components read via services. Client components mutate via `fetch('/api/...')`, then `router.refresh()` + toast.
 11. Next 16: `params` and `cookies()` are async.
 12. Prisma 7: import from `@/generated/prisma/client`; `prisma.config.ts` loads `dotenv/config`,
     uses `DATABASE_URL_UNPOOLED`, and sets `migrations.seed = "tsx prisma/seed.ts"`.
-13. Mutating API routes reject requests whose `Origin` header doesn't match the host.
+13. Mutating API routes call `assertSameOrigin(request)`: missing or mismatched `Origin` (vs
+    `x-forwarded-host`/`Host`) → **403** `FORBIDDEN`.
 14. Throw at startup if `SESSION_SECRET` is missing.
 15. Keep components small; no `any`; handle loading, empty and error states.
 16. Unit tests sit next to the code as `*.test.ts` (schemas, session, task service).
