@@ -67,6 +67,4 @@ export type TaskStatusValue = z.infer<typeof taskStatusEnum>
 export type TaskPriorityValue = z.infer<typeof taskPriorityEnum>
 export type CreateTaskInput = z.input<typeof createTaskSchema>
 export type CreateTaskData = z.output<typeof createTaskSchema>
-export type UpdateTaskInput = z.input<typeof updateTaskSchema>
 export type UpdateTaskData = z.output<typeof updateTaskSchema>
-export type TaskStatusInput = z.input<typeof taskStatusSchema>

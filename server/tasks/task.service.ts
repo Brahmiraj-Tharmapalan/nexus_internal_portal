@@ -11,7 +11,7 @@ import {
 } from '@/lib/validation/task'
 
 /** Task fields sent to the client. Owner and assignee ids stay on the server. */
-export const taskSelect = {
+const taskSelect = {
   id: true,
   title: true,
   description: true,
