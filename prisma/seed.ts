@@ -9,6 +9,12 @@ import {
   TaskStatus,
 } from '../generated/prisma/client'
 
+// The demo users share a publicly documented password, so never seed them into production
+// by accident. Set ALLOW_DEMO_SEED=1 to opt in deliberately (e.g. a public demo).
+if (process.env.NODE_ENV === 'production' && process.env.ALLOW_DEMO_SEED !== '1') {
+  throw new Error('Refusing to seed demo users in production. Set ALLOW_DEMO_SEED=1 to override.')
+}
+
 // Own client: the app's `lib/db.ts` imports `server-only`, which can't run here.
 const connectionString = process.env.DATABASE_URL_UNPOOLED ?? process.env.DATABASE_URL
 if (!connectionString) {

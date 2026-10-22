@@ -2,8 +2,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { Prisma } from '@/generated/prisma/client'
 import { ApiError } from '@/lib/http'
 
-const { create, findUnique } = vi.hoisted(() => ({ create: vi.fn(), findUnique: vi.fn() }))
-vi.mock('@/lib/db', () => ({ prisma: { user: { create, findUnique } } }))
+const { create, findUnique, updateMany } = vi.hoisted(() => ({
+  create: vi.fn(),
+  findUnique: vi.fn(),
+  updateMany: vi.fn(),
+}))
+vi.mock('@/lib/db', () => ({ prisma: { user: { create, findUnique, updateMany } } }))
 
 const { verifyPassword } = vi.hoisted(() => ({ verifyPassword: vi.fn() }))
 vi.mock('@/lib/auth/password', () => ({
@@ -11,7 +15,7 @@ vi.mock('@/lib/auth/password', () => ({
   verifyPassword,
 }))
 
-const { authenticate, registerUser } = await import('./auth.service')
+const { authenticate, registerUser, revokeSessions } = await import('./auth.service')
 
 const publicUser = {
   id: 'user_1',
@@ -19,6 +23,7 @@ const publicUser = {
   email: 'ada@example.com',
   role: 'USER' as const,
   createdAt: new Date('2026-01-01'),
+  sessionVersion: 0,
 }
 
 beforeEach(() => {
@@ -40,6 +45,7 @@ describe('registerUser', () => {
     const args = create.mock.calls[0][0]
     expect(args.data).toEqual({ name: 'Ada', email: 'ada@example.com', passwordHash: 'hashed:Password123' })
     expect(args.select.passwordHash).toBeUndefined()
+    expect(args.select.sessionVersion).toBe(true)
   })
 
   it('turns a duplicate email into a 409 with an email field error', async () => {
@@ -64,7 +70,7 @@ describe('registerUser', () => {
 describe('authenticate', () => {
   const creds = { email: 'ada@example.com', password: 'Password123' }
 
-  it('returns the user without passwordHash for valid credentials', async () => {
+  it('returns the user and sessionVersion without passwordHash for valid credentials', async () => {
     findUnique.mockResolvedValue({ ...publicUser, passwordHash: 'stored-hash' })
     verifyPassword.mockResolvedValue(true)
 
@@ -91,5 +97,16 @@ describe('authenticate', () => {
       message: 'Invalid email or password',
     })
     expect(verifyPassword).toHaveBeenCalledWith('Password123', expect.stringMatching(/^\$2[aby]\$12\$/))
+  })
+})
+
+describe('revokeSessions', () => {
+  it('bumps the user sessionVersion so older tokens stop working', async () => {
+    updateMany.mockResolvedValue({ count: 1 })
+    await revokeSessions('user_1')
+    expect(updateMany).toHaveBeenCalledWith({
+      where: { id: 'user_1' },
+      data: { sessionVersion: { increment: 1 } },
+    })
   })
 })

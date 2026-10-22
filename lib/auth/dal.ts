@@ -18,10 +18,31 @@ export const publicUserSelect = {
 
 export type PublicUser = Prisma.UserGetPayload<{ select: typeof publicUserSelect }>
 
-/** For pages and Server Components: redirects to /login when there is no valid session. */
-export const verifySession = cache(async (): Promise<SessionPayload> => {
+/** Where pages send a session that fails the database check; it clears the cookie. */
+export const SESSION_EXPIRED_PATH = '/api/auth/session-expired'
+
+/**
+ * The session from the cookie, checked against the database: the user must still exist and
+ * the token's sessionVersion must match (logout bumps it). The role comes from the database,
+ * so a role change applies at once. Returns null when any check fails.
+ */
+export async function getValidSession(): Promise<SessionPayload | null> {
   const session = await getSession()
-  if (!session) redirect('/login')
+  if (!session) return null
+  const user = await prisma.user.findUnique({
+    where: { id: session.userId },
+    select: { role: true, sessionVersion: true },
+  })
+  if (!user || user.sessionVersion !== session.sv) return null
+  return { userId: session.userId, role: user.role, sv: user.sessionVersion }
+}
+
+/** For pages and Server Components: redirects away when there is no valid session. */
+export const verifySession = cache(async (): Promise<SessionPayload> => {
+  const session = await getValidSession()
+  // A revoked or orphaned token can't be cleared during render, and /login would bounce a
+  // cookie that still looks valid back here, so let a route handler clear it first.
+  if (!session) redirect(SESSION_EXPIRED_PATH)
   return session
 })
 
@@ -30,8 +51,8 @@ export function getUserById(userId: string): Promise<PublicUser | null> {
 }
 
 /**
- * For pages: the logged-in user, or null if the session points at a user that no longer exists.
- * Redirects to /login when there is no valid session.
+ * For pages: the logged-in user, or null if it vanished between the session check and this read.
+ * Redirects away when there is no valid session.
  */
 export const getCurrentUser = cache(async (): Promise<PublicUser | null> => {
   const { userId } = await verifySession()
@@ -43,7 +64,7 @@ export const getCurrentUser = cache(async (): Promise<PublicUser | null> => {
  * Call it inside the handler's try block so `handleRouteError` turns it into JSON.
  */
 export async function requireApiSession(): Promise<SessionPayload> {
-  const session = await getSession()
+  const session = await getValidSession()
   if (!session) {
     throw new ApiError(401, 'UNAUTHORIZED', 'Authentication required')
   }

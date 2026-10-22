@@ -10,6 +10,7 @@ export type ErrorCode =
   | 'FORBIDDEN'
   | 'NOT_FOUND'
   | 'CONFLICT'
+  | 'TOO_MANY_REQUESTS'
   | 'VALIDATION_ERROR'
   | 'INTERNAL_ERROR'
 
@@ -24,6 +25,8 @@ export class ApiError extends Error {
     readonly code: ErrorCode,
     message: string,
     readonly details?: unknown,
+    /** Extra response headers, e.g. Retry-After on a 429. */
+    readonly headers?: Record<string, string>,
   ) {
     super(message)
     this.name = 'ApiError'
@@ -39,16 +42,17 @@ export function error(
   code: ErrorCode,
   message: string,
   details?: unknown,
+  headers?: Record<string, string>,
 ): NextResponse<ErrorBody> {
   const body: ErrorBody = { error: { code, message } }
   if (details !== undefined) body.error.details = details
-  return NextResponse.json(body, { status })
+  return NextResponse.json(body, { status, headers })
 }
 
 /** Maps any thrown value to the standard error response. Unknown errors are logged, never leaked. */
 export function handleRouteError(err: unknown): NextResponse<ErrorBody> {
   if (err instanceof ApiError) {
-    return error(err.status, err.code, err.message, err.details)
+    return error(err.status, err.code, err.message, err.details, err.headers)
   }
   if (err instanceof ZodError) {
     return error(422, 'VALIDATION_ERROR', 'Invalid input', z.flattenError(err))
@@ -67,6 +71,15 @@ export async function readJson(request: Request): Promise<unknown> {
   } catch {
     throw new ApiError(400, 'BAD_REQUEST', 'Request body must be valid JSON')
   }
+}
+
+/**
+ * The client IP for rate limiting. On Vercel the platform sets x-forwarded-for, so its first
+ * entry is the real client. Elsewhere, only trust it behind a proxy that overwrites it.
+ */
+export function clientIp(request: Request): string {
+  const forwarded = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+  return forwarded || request.headers.get('x-real-ip')?.trim() || 'unknown'
 }
 
 function requestHost(request: Request): string | null {

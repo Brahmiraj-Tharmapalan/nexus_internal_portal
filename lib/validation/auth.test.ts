@@ -58,4 +58,10 @@ describe('loginSchema', () => {
     const result = loginSchema.safeParse({ email: 'demo@portal.dev', password: '' })
     expect(fieldErrors(result)).toContain('password')
   })
+
+  it('rejects a very long password before it reaches bcrypt', () => {
+    const result = loginSchema.safeParse({ email: 'demo@portal.dev', password: 'a'.repeat(257) })
+    expect(result.success).toBe(false)
+    expect(loginSchema.safeParse({ email: 'demo@portal.dev', password: 'a'.repeat(256) }).success).toBe(true)
+  })
 })

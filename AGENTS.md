@@ -39,6 +39,7 @@ components/{auth,tasks}/               feature components
 lib/db.ts                              Prisma singleton
 lib/auth/{password,session,dal}.ts     hashing, cookie/JWT, session checks
 lib/validation/{auth,task}.ts          Zod schemas
+lib/rate-limit.ts                      Postgres fixed-window limiter (login, register)
 lib/http.ts                            JSON responses, ApiError, error mapping, origin check
 test/stubs/                            test-only stubs (e.g. `server-only`), vitest.config.mts
 server/tasks/task.service.ts           business logic
@@ -51,9 +52,10 @@ Task_2.pdf                             Part 2 deliverable (repo root)
 ```
 
 ## Data model
-- `User`: id (cuid), name, email (unique, lowercased), passwordHash, role `USER|ADMIN` (default USER), createdAt, updatedAt
+- `User`: id (cuid), name, email (unique, lowercased), passwordHash, role `USER|ADMIN` (default USER), sessionVersion (default 0), createdAt, updatedAt
 - `Task`: id, title (1–120), description? (≤2000), status `TODO|IN_PROGRESS|DONE` (default TODO),
   priority `LOW|MEDIUM|HIGH` (default MEDIUM), dueDate?, createdById (cascade delete), assigneeId?, createdAt, updatedAt
+- `RateLimit`: key (id), count, windowStart (fixed-window counters, see `lib/rate-limit.ts`)
 - Password: min 8 chars, at least one letter and one number
 - Seed users: `demo@portal.dev` (USER), `admin@portal.dev` (ADMIN), password `Password123!`
 
@@ -64,9 +66,14 @@ Task_2.pdf                             Part 2 deliverable (repo root)
 4. `import 'server-only'` in `lib/db.ts`, `lib/auth/*`, `server/*`.
 5. Pages use `verifySession()` (redirects to `/login`). API routes use `requireApiSession()` (returns 401 JSON).
 6. `proxy.ts` only redirects for UX; it is never the security check.
-7. Cookie `session`: httpOnly, secure in production, sameSite lax, path `/`, 7 days. JWT holds only `userId` and `role`.
+7. Cookie `session`: httpOnly, secure in production, sameSite lax, path `/`, 7 days. JWT holds only `userId`, `role` and `sv`
+   (the user's `sessionVersion`). `verifySession()`/`requireApiSession()` check the user still exists and `sv`
+   matches; logout bumps `sessionVersion`, revoking every token. Pages with a stale cookie go to
+   `/api/auth/session-expired`, which clears it.
 8. Login returns the same 401 "Invalid email or password" for unknown email or wrong password. Hash with bcrypt cost 12.
-9. Error shape: `{ error: { code, message, details? } }`. Use 400/401/403/404/409/422/500
+   Failed logins are limited (5 per account+IP, 20 per IP, per 15 min) and sign-ups to 5 per IP per hour → **429**
+   with `Retry-After`.
+9. Error shape: `{ error: { code, message, details? } }`. Use 400/401/403/404/409/422/429/500
    (400 bad JSON, 403 cross-origin, 409 unique violation, 422 Zod). Handlers throw `ApiError` and
    return `handleRouteError(err)` from `catch`; `requireApiSession()` throws a 401 `ApiError`.
 10. Server Components read via services. Client components mutate via `fetch('/api/...')`, then `router.refresh()` + toast.
@@ -76,6 +83,8 @@ Task_2.pdf                             Part 2 deliverable (repo root)
 13. Mutating API routes call `assertSameOrigin(request)`: missing or mismatched `Origin` (vs
     `x-forwarded-host`/`Host`) → **403** `FORBIDDEN`.
 14. Throw at startup if `SESSION_SECRET` is missing.
+    Security headers (CSP, frame-ancestors none, nosniff, referrer policy) live in `next.config.ts`.
+    `prisma/seed.ts` refuses to run in production unless `ALLOW_DEMO_SEED=1`.
 15. Keep components small; no `any`; handle loading, empty and error states.
 16. Unit tests sit next to the code as `*.test.ts` (schemas, session, task service).
 

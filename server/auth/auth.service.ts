@@ -13,12 +13,20 @@ const DUMMY_HASH = '$2b$12$oxvRmoYsoWQIFlavDjllDOkr327x5L880Kn0f5HpWzD.MuON3Dyf6
 
 const INVALID_CREDENTIALS = 'Invalid email or password'
 
-export async function registerUser(data: RegisterData): Promise<PublicUser> {
+/** The public user plus what is needed to issue a session token. */
+export type SessionUser = PublicUser & { sessionVersion: number }
+
+const sessionUserSelect = {
+  ...publicUserSelect,
+  sessionVersion: true,
+} satisfies Prisma.UserSelect
+
+export async function registerUser(data: RegisterData): Promise<SessionUser> {
   const passwordHash = await hashPassword(data.password)
   try {
     return await prisma.user.create({
       data: { name: data.name, email: data.email, passwordHash },
-      select: publicUserSelect,
+      select: sessionUserSelect,
     })
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
@@ -31,10 +39,10 @@ export async function registerUser(data: RegisterData): Promise<PublicUser> {
 }
 
 /** Returns the user for valid credentials; otherwise throws the same 401 for every failure. */
-export async function authenticate(data: LoginData): Promise<PublicUser> {
+export async function authenticate(data: LoginData): Promise<SessionUser> {
   const found = await prisma.user.findUnique({
     where: { email: data.email },
-    select: { ...publicUserSelect, passwordHash: true },
+    select: { ...sessionUserSelect, passwordHash: true },
   })
   if (!found) {
     await verifyPassword(data.password, DUMMY_HASH)
@@ -45,4 +53,12 @@ export async function authenticate(data: LoginData): Promise<PublicUser> {
     throw new ApiError(401, 'UNAUTHORIZED', INVALID_CREDENTIALS)
   }
   return user
+}
+
+/** Invalidates every session token issued to the user so far (all devices). */
+export async function revokeSessions(userId: string): Promise<void> {
+  await prisma.user.updateMany({
+    where: { id: userId },
+    data: { sessionVersion: { increment: 1 } },
+  })
 }

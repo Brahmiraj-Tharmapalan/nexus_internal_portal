@@ -34,7 +34,8 @@ export const registerSchema = z
 
 export const loginSchema = z.object({
   email,
-  password: z.string().min(1, 'Password is required'),
+  // Generous cap (above the 72 used at sign-up) so huge bodies are rejected before hashing.
+  password: z.string().min(1, 'Password is required').max(256, 'Password is too long'),
 })
 
 export type RegisterInput = z.input<typeof registerSchema>

@@ -1,7 +1,35 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { z } from 'zod'
 import { Prisma } from '@/generated/prisma/client'
-import { ApiError, assertSameOrigin, error, handleRouteError, ok, readJson } from './http'
+import {
+  ApiError,
+  assertSameOrigin,
+  clientIp,
+  error,
+  handleRouteError,
+  ok,
+  readJson,
+} from './http'
+
+describe('429 and clientIp', () => {
+  it('handleRouteError passes ApiError headers through (Retry-After)', async () => {
+    const res = handleRouteError(
+      new ApiError(429, 'TOO_MANY_REQUESTS', 'Slow down', { retryAfter: 30 }, { 'Retry-After': '30' }),
+    )
+    expect(res.status).toBe(429)
+    expect(res.headers.get('Retry-After')).toBe('30')
+    await expect(res.json()).resolves.toEqual({
+      error: { code: 'TOO_MANY_REQUESTS', message: 'Slow down', details: { retryAfter: 30 } },
+    })
+  })
+
+  it('clientIp takes the first x-forwarded-for entry, then x-real-ip, else unknown', () => {
+    const req = (headers: Record<string, string>) => new Request('http://x.test', { headers })
+    expect(clientIp(req({ 'x-forwarded-for': '1.1.1.1, 10.0.0.1' }))).toBe('1.1.1.1')
+    expect(clientIp(req({ 'x-real-ip': '2.2.2.2' }))).toBe('2.2.2.2')
+    expect(clientIp(req({}))).toBe('unknown')
+  })
+})
 
 afterEach(() => {
   vi.restoreAllMocks()
