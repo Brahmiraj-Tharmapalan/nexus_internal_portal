@@ -1,25 +1,27 @@
 import type { Metadata } from 'next'
-import { LogoutButton } from '@/components/auth/logout-button'
-import { getCurrentUser } from '@/lib/auth/dal'
+import { NewTaskButton } from '@/components/tasks/new-task-button'
+import { TaskList } from '@/components/tasks/task-list'
+import { verifySession } from '@/lib/auth/dal'
+import { listTasks } from '@/server/tasks/task.service'
 
 export const metadata: Metadata = { title: 'Tasks · Internal Task Portal' }
 
-// Placeholder so login has somewhere to land. Phase 5 replaces this with the task UI.
 export default async function TasksPage() {
-  const user = await getCurrentUser()
+  const { userId } = await verifySession()
+  const tasks = await listTasks(userId)
 
   return (
-    <main className="mx-auto flex w-full max-w-3xl items-center justify-between gap-4 px-4 py-8">
-      <p className="text-sm text-muted-foreground">
-        {user ? (
-          <>
-            Signed in as <span className="font-medium text-foreground">{user.name}</span>
-          </>
-        ) : (
-          'Your account no longer exists. Please log out.'
-        )}
-      </p>
-      <LogoutButton />
-    </main>
+    <div className="flex flex-col gap-6">
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <h1 className="text-xl font-semibold tracking-tight">My tasks</h1>
+          <p className="text-sm text-muted-foreground">
+            {tasks.length === 1 ? '1 task' : `${tasks.length} tasks`}
+          </p>
+        </div>
+        {tasks.length > 0 && <NewTaskButton />}
+      </div>
+      <TaskList tasks={tasks} />
+    </div>
   )
 }
