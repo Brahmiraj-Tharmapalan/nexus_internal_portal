@@ -1,5 +1,7 @@
-export default function page() {
-  return (
-    <div>Welcome</div>
-  )
+import { redirect } from 'next/navigation'
+import { getSession } from '@/lib/auth/session'
+
+export default async function Home() {
+  const session = await getSession()
+  redirect(session ? '/tasks' : '/login')
 }
