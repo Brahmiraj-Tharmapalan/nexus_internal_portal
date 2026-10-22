@@ -1,5 +1,6 @@
-import { CheckSquareIcon } from 'lucide-react'
 import { LogoutButton } from '@/components/auth/logout-button'
+import { UserMenu } from '@/components/auth/user-menu'
+import { Wordmark } from '@/components/brand/wordmark'
 import { getCurrentUser } from '@/lib/auth/dal'
 
 export default async function PortalLayout({ children }: LayoutProps<'/'>) {
@@ -7,32 +8,21 @@ export default async function PortalLayout({ children }: LayoutProps<'/'>) {
   const user = await getCurrentUser()
 
   return (
-    <div className="flex flex-1 flex-col bg-muted/40">
-      <header className="border-b bg-background">
-        <div className="mx-auto flex h-14 w-full max-w-3xl items-center justify-between gap-4 px-4">
-          <span className="flex items-center gap-2 font-semibold">
-            <CheckSquareIcon className="size-5" aria-hidden />
-            <span className="hidden sm:inline">Internal Task Portal</span>
-            <span className="sm:hidden">Tasks</span>
-          </span>
-          <div className="flex min-w-0 items-center gap-3">
-            {user && (
-              <span className="truncate text-sm text-muted-foreground" title={user.email}>
-                {user.name}
-              </span>
-            )}
-            <LogoutButton />
-          </div>
+    <div className="flex flex-1 flex-col">
+      <header className="border-b border-border/80 bg-background/85 backdrop-blur supports-[backdrop-filter]:sticky supports-[backdrop-filter]:top-0 supports-[backdrop-filter]:z-30">
+        <div className="mx-auto flex h-[4.5rem] w-full max-w-3xl items-center justify-between gap-4 px-4 sm:px-6">
+          <Wordmark />
+          {user ? <UserMenu name={user.name} email={user.email} /> : <LogoutButton />}
         </div>
       </header>
-      <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-6 sm:py-8">
+      <main className="mx-auto w-full max-w-3xl flex-1 px-4 pt-10 pb-16 sm:px-6 sm:pt-14">
         {user ? (
           children
         ) : (
           // The session is valid but its user was deleted. A plain redirect to /login would loop
           // (the cookie still looks valid there), so ask the user to log out, which clears it.
-          <p className="rounded-lg border bg-background p-6 text-center text-sm text-muted-foreground">
-            Your account no longer exists. Please log out.
+          <p className="rounded-xl border bg-card p-8 text-center text-sm text-muted-foreground">
+            This account no longer exists. Log out to continue.
           </p>
         )}
       </main>

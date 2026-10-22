@@ -68,13 +68,14 @@ export function TaskForm({ task, onDone }: Props) {
         <FieldGroup>
           <Field data-invalid={!!errors.title}>
             <FieldLabel htmlFor="task-title">Title</FieldLabel>
-            <Input id="task-title" maxLength={120} aria-invalid={!!errors.title} {...register('title')} />
+            <Input id="task-title" className="h-10 bg-paper px-3" maxLength={120} aria-invalid={!!errors.title} {...register('title')} />
             <FieldError errors={[errors.title]} />
           </Field>
           <Field data-invalid={!!errors.description}>
             <FieldLabel htmlFor="task-description">Description</FieldLabel>
             <Textarea
               id="task-description"
+              className="bg-paper px-3 py-2"
               rows={4}
               maxLength={2000}
               placeholder="Optional"
@@ -90,6 +91,7 @@ export function TaskForm({ task, onDone }: Props) {
               <FieldLabel htmlFor="task-due-date">Due date</FieldLabel>
               <Input
                 id="task-due-date"
+                className="h-10 bg-paper px-3"
                 type="date"
                 aria-invalid={!!errors.dueDate}
                 {...register('dueDate')}
@@ -99,9 +101,9 @@ export function TaskForm({ task, onDone }: Props) {
           </div>
         </FieldGroup>
       </fieldset>
-      <DialogFooter>
-        <DialogClose render={<Button variant="outline" disabled={isSubmitting} />}>Cancel</DialogClose>
-        <Button type="submit" disabled={isSubmitting} aria-busy={isSubmitting}>
+      <DialogFooter className="-mx-6 -mb-6 mt-2 bg-background px-6 py-4">
+        <DialogClose render={<Button variant="outline" className="h-9 bg-paper px-4" disabled={isSubmitting} />}>Cancel</DialogClose>
+        <Button type="submit" className="h-9 px-5 hover:bg-primary/90" disabled={isSubmitting} aria-busy={isSubmitting}>
           {isSubmitting && <Loader2Icon className="animate-spin" aria-hidden />}
           {task ? 'Save changes' : 'Create task'}
         </Button>
@@ -132,7 +134,7 @@ function SelectField({ control, name, label, items }: SelectFieldProps) {
             onValueChange={(value) => value && field.onChange(value)}
             disabled={field.disabled}
           >
-            <SelectTrigger id={id} className="w-full" aria-invalid={fieldState.invalid} onBlur={field.onBlur}>
+            <SelectTrigger id={id} className="w-full bg-paper pl-3 data-[size=default]:h-10" aria-invalid={fieldState.invalid} onBlur={field.onBlur}>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>

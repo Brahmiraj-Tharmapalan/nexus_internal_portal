@@ -1,26 +1,19 @@
 import type { Metadata } from 'next'
-import { NewTaskButton } from '@/components/tasks/new-task-button'
+import { TaskBanner } from '@/components/tasks/task-banner'
 import { TaskList } from '@/components/tasks/task-list'
-import { verifySession } from '@/lib/auth/dal'
+import { getCurrentUser, verifySession } from '@/lib/auth/dal'
 import { listTasks } from '@/server/tasks/task.service'
 
-export const metadata: Metadata = { title: 'Tasks · Internal Task Portal' }
+export const metadata: Metadata = { title: 'Tasks · Nexus' }
 
 export default async function TasksPage() {
   const { userId } = await verifySession()
-  const tasks = await listTasks(userId)
+  const [tasks, user] = await Promise.all([listTasks(userId), getCurrentUser()])
+  const firstName = user?.name.trim().split(/\s+/)[0] ?? null
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between gap-4">
-        <div>
-          <h1 className="text-xl font-semibold tracking-tight">My tasks</h1>
-          <p className="text-sm text-muted-foreground">
-            {tasks.length === 1 ? '1 task' : `${tasks.length} tasks`}
-          </p>
-        </div>
-        {tasks.length > 0 && <NewTaskButton />}
-      </div>
+    <div className="flex flex-col gap-8">
+      <TaskBanner firstName={firstName} tasks={tasks} />
       <TaskList tasks={tasks} />
     </div>
   )

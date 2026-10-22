@@ -16,9 +16,22 @@ export const PRIORITY_LABELS: Record<TaskPriorityValue, string> = {
 }
 
 export const PRIORITY_BADGE_CLASSES: Record<TaskPriorityValue, string> = {
-  LOW: 'bg-muted text-muted-foreground',
-  MEDIUM: 'bg-amber-100 text-amber-900 dark:bg-amber-500/15 dark:text-amber-300',
-  HIGH: 'bg-red-100 text-red-900 dark:bg-red-500/15 dark:text-red-300',
+  LOW: 'border-border text-muted-foreground',
+  MEDIUM: 'border-brass/50 bg-brass-soft/50 text-[#6e5427]',
+  HIGH: 'border-garnet/35 bg-garnet/[0.06] text-garnet',
+}
+
+/** The thin rule on a task row's left edge. */
+export const PRIORITY_RULE_CLASSES: Record<TaskPriorityValue, string> = {
+  LOW: 'bg-border',
+  MEDIUM: 'bg-brass',
+  HIGH: 'bg-garnet',
+}
+
+export const STATUS_DOT_CLASSES: Record<TaskStatusValue, string> = {
+  TODO: 'border border-muted-foreground/60',
+  IN_PROGRESS: 'bg-brass',
+  DONE: 'bg-leather',
 }
 
 /** `items` for base-ui Select, so the trigger shows the label instead of the raw value. */

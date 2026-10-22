@@ -41,6 +41,7 @@ export function LoginForm() {
           <FieldLabel htmlFor="email">Email</FieldLabel>
           <Input
             id="email"
+            className="h-10 bg-paper px-3"
             type="email"
             autoComplete="email"
             placeholder="you@example.com"
@@ -54,6 +55,7 @@ export function LoginForm() {
           <FieldLabel htmlFor="password">Password</FieldLabel>
           <Input
             id="password"
+            className="h-10 bg-paper px-3"
             type="password"
             autoComplete="current-password"
             aria-invalid={!!errors.password}

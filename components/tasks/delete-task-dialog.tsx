@@ -53,7 +53,7 @@ export function DeleteTaskDialog({ taskId, taskTitle }: { taskId: string; taskTi
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Delete this task?</AlertDialogTitle>
+          <AlertDialogTitle className="text-2xl font-normal text-leather">Delete this task?</AlertDialogTitle>
           <AlertDialogDescription>
             “{taskTitle}” will be permanently deleted. This cannot be undone.
           </AlertDialogDescription>

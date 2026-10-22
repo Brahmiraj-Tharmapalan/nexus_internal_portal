@@ -27,9 +27,9 @@ export function TaskFormDialog({ task, trigger }: Props) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger render={trigger} />
-      <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle>{isEdit ? 'Edit task' : 'New task'}</DialogTitle>
+      <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto p-6 sm:max-w-lg">
+        <DialogHeader className="gap-1.5 pb-2">
+          <DialogTitle className="text-[1.75rem] leading-tight font-normal text-leather">{isEdit ? 'Edit task' : 'New task'}</DialogTitle>
           <DialogDescription>
             {isEdit ? 'Update the details of this task.' : 'Add a task to your list.'}
           </DialogDescription>

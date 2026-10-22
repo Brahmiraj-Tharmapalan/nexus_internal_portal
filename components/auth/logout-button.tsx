@@ -7,7 +7,8 @@ import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { apiFetch } from '@/lib/api-client'
 
-export function LogoutButton() {
+/** Ends the session and sends the user to /login. */
+export function useLogout() {
   const router = useRouter()
   const [pending, setPending] = useState(false)
 
@@ -23,8 +24,20 @@ export function LogoutButton() {
     }
   }
 
+  return { logout, pending }
+}
+
+export function LogoutButton() {
+  const { logout, pending } = useLogout()
+
   return (
-    <Button variant="outline" size="sm" onClick={logout} disabled={pending}>
+    <Button
+      variant="ghost"
+      size="sm"
+      className="text-muted-foreground hover:text-foreground"
+      onClick={logout}
+      disabled={pending}
+    >
       {pending ? <Loader2Icon className="animate-spin" aria-hidden /> : <LogOutIcon aria-hidden />}
       Log out
     </Button>

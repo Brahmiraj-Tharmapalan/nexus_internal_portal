@@ -59,6 +59,7 @@ export function RegisterForm() {
             <FieldLabel htmlFor={name}>{label}</FieldLabel>
             <Input
               id={name}
+              className="h-10 bg-paper px-3"
               {...input}
               aria-invalid={!!errors[name]}
               disabled={isSubmitting}
