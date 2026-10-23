@@ -1,5 +1,6 @@
+// Plain const objects, not the Zod schemas, so pages that only show tasks don't ship Zod.
+import { TaskPriority, TaskStatus } from '@/generated/prisma/enums'
 import type { TaskPriorityValue, TaskStatusValue } from '@/lib/validation/task'
-import { TASK_PRIORITIES, TASK_STATUSES } from '@/lib/validation/task'
 
 // Labels and colours for task status and priority, kept in one place.
 
@@ -35,8 +36,8 @@ export const STATUS_DOT_CLASSES: Record<TaskStatusValue, string> = {
 }
 
 /** `items` for base-ui Select, so the trigger shows the label instead of the raw value. */
-export const STATUS_ITEMS = TASK_STATUSES.map((value) => ({ value, label: STATUS_LABELS[value] }))
-export const PRIORITY_ITEMS = TASK_PRIORITIES.map((value) => ({
+export const STATUS_ITEMS = Object.values(TaskStatus).map((value) => ({ value, label: STATUS_LABELS[value] }))
+export const PRIORITY_ITEMS = Object.values(TaskPriority).map((value) => ({
   value,
   label: PRIORITY_LABELS[value],
 }))

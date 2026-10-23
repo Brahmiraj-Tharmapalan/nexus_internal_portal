@@ -1,5 +1,3 @@
-'use client'
-
 import { PencilIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import type { TaskDTO } from '@/server/tasks/task.service'
